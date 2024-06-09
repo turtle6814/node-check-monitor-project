@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Client Monitoring Dashboard</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    .card {
+      margin: 10px;
+    }
+    .dashboard-header {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="dashboard-header">
+      <h1>Client Monitoring Dashboard</h1>
+      <a href="clients.html" class="btn btn-primary">View Clients Information</a>
+    </div>
+    <div class="row">
+      <div class="col-md-3">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Submitted</h5>
+            <p class="card-text" id="submittedTasks">0 tasks</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Running</h5>
+            <p class="card-text" id="runningTasks">0 tasks</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Done</h5>
+            <p class="card-text" id="doneTasks">0 tasks</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Pending</h5>
+            <p class="card-text" id="pendingTasks">0 tasks</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Failed</h5>
+            <p class="card-text" id="failedTasks">0 tasks</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Killed</h5>
+            <p class="card-text" id="killedTasks">0 tasks</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Total Clients</h5>
+            <p class="card-text" id="totalClients">0</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Active Clients</h5>
+            <p class="card-text" id="activeClients">0</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Inactive Clients</h5>
+            <p class="card-text" id="inactiveClients">0</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Total Virtual Cores</h5>
+            <p class="card-text" id="totalVirtualCores">0</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Allocated Virtual Cores</h5>
+            <p class="card-text" id="allocatedVirtualCores">0</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Allocated Containers</h5>
+            <p class="card-text" id="allocatedContainers">0</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Response Time</h5>
+            <p class="card-text" id="responseTime">0 ms</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-9">
+        <div class="card">
+          <div class="card-body">
+            <canvas id="cpuUsageChart" width="400" height="200"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <canvas id="memoryUsageChart" width="400" height="200"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <canvas id="allocatedMemoryChart" width="400" height="200"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <canvas id="allocatedVirtualCoresChart" width="400" height="200"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <canvas id="allocatedContainersChart" width="400" height="200"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <canvas id="coreUsageChart" width="400" height="200"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const socket = io();
+
+    // Task metrics elements
+    const submittedTasksElem = document.getElementById('submittedTasks');
+    const runningTasksElem = document.getElementById('runningTasks');
+    const doneTasksElem = document.getElementById('doneTasks');
+    const pendingTasksElem = document.getElementById('pendingTasks');
+    const failedTasksElem = document.getElementById('failedTasks');
+    const killedTasksElem = document.getElementById('killedTasks');
+
+    // Client metrics elements
+    const totalClientsElem = document.getElementById('totalClients');
+    const activeClientsElem = document.getElementById('activeClients');
+    const inactiveClientsElem = document.getElementById('inactiveClients');
+    const totalVirtualCoresElem = document.getElementById('totalVirtualCores');
+    const allocatedVirtualCoresElem = document.getElementById('allocatedVirtualCores');
+    const allocatedContainersElem = document.getElementById('allocatedContainers');
+    const responseTimeElem = document.getElementById('responseTime');
+
+    // Chart elements
+    const cpuUsageCtx = document.getElementById('cpuUsageChart').getContext('2d');
+    const memoryUsageCtx = document.getElementById('memoryUsageChart').getContext('2d');
+    const allocatedMemoryCtx = document.getElementById('allocatedMemoryChart').getContext('2d');
+    const allocatedVirtualCoresCtx = document.getElementById('allocatedVirtualCoresChart').getContext('2d');
+    const allocatedContainersCtx = document.getElementById('allocatedContainersChart').getContext('2d');
+    const coreUsageCtx = document.getElementById('coreUsageChart').getContext('2d');
+
+    // Initialize charts
+    const cpuUsageChart = new Chart(cpuUsageCtx, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'CPU Usage (%)', data: [], borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1 }] },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    const memoryUsageChart = new Chart(memoryUsageCtx, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Memory Usage (MB)', data: [], borderColor: 'rgba(255, 99, 132, 1)', borderWidth: 1 }] },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    const allocatedMemoryChart = new Chart(allocatedMemoryCtx, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Allocated Memory (MB)', data: [], borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1 }] },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    const allocatedVirtualCoresChart = new Chart(allocatedVirtualCoresCtx, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Allocated Virtual Cores', data: [], borderColor: 'rgba(54, 162, 235, 1)', borderWidth: 1 }] },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    const allocatedContainersChart = new Chart(allocatedContainersCtx, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Allocated Containers', data: [], borderColor: 'rgba(153, 102, 255, 1)', borderWidth: 1 }] },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    const coreUsageChart = new Chart(coreUsageCtx, {
+      type: 'line',
+      data: { labels: [], datasets: [{ label: 'Core Usage (%)', data: [], borderColor: 'rgba(153, 102, 255, 1)', borderWidth: 1 }] },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    socket.on('connect', () => {
+      setInterval(() => {
+        fetch('/stats')
+          .then(response => response.json())
+          .then(data => {
+            const timestamp = new Date().toLocaleTimeString();
+
+            const cpuUsage = data.clients.reduce((sum, client) => sum + client.cpuUsage, 0) / data.totalClients;
+            const memoryUsage = data.clients.reduce((sum, client) => sum + client.memoryUsage, 0) / data.totalClients;
+            const coreUsage = data.clients.reduce((sum, client) => sum + client.coreUsage, 0) / data.totalClients;
+
+            cpuUsageChart.data.labels.push(timestamp);
+            cpuUsageChart.data.datasets[0].data.push(cpuUsage);
+            cpuUsageChart.update();
+
+            memoryUsageChart.data.labels.push(timestamp);
+            memoryUsageChart.data.datasets[0].data.push(memoryUsage);
+            memoryUsageChart.update();
+
+            coreUsageChart.data.labels.push(timestamp);
+            coreUsageChart.data.datasets[0].data.push(coreUsage);
+            coreUsageChart.update();
+
+            allocatedMemoryChart.data.labels.push(timestamp);
+            allocatedMemoryChart.data.datasets[0].data.push(data.allocatedMemory);
+            allocatedMemoryChart.update();
+
+            allocatedVirtualCoresChart.data.labels.push(timestamp);
+            allocatedVirtualCoresChart.data.datasets[0].data.push(data.allocatedVirtualCores);
+            allocatedVirtualCoresChart.update();
+
+            allocatedContainersChart.data.labels.push(timestamp);
+            allocatedContainersChart.data.datasets[0].data.push(data.allocatedContainers);
+            allocatedContainersChart.update();
+
+            totalClientsElem.textContent = data.totalClients;
+            activeClientsElem.textContent = data.activeClients;
+            inactiveClientsElem.textContent = data.inactiveClients;
+            totalVirtualCoresElem.textContent = data.totalVirtualCores;
+            allocatedVirtualCoresElem.textContent = data.allocatedVirtualCores;
+            allocatedContainersElem.textContent = data.allocatedContainers;
+            responseTimeElem.textContent = `${data.responseTime.toFixed(2)} ms`;
+
+            // Update task metrics
+            submittedTasksElem.textContent = `${data.taskMetrics.submitted} tasks`;
+            runningTasksElem.textContent = `${data.taskMetrics.running} tasks`;
+            doneTasksElem.textContent = `${data.taskMetrics.done} tasks`;
+            pendingTasksElem.textContent = `${data.taskMetrics.pending} tasks`;
+            failedTasksElem.textContent = `${data.taskMetrics.failed} tasks`;
+            killedTasksElem.textContent = `${data.taskMetrics.killed} tasks`;
+          });
+      }, 1000);
+    });
+
+    socket.on('task-metrics-updated', (taskMetrics) => {
+      submittedTasksElem.textContent = `${taskMetrics.submitted} tasks`;
+      runningTasksElem.textContent = `${taskMetrics.running} tasks`;
+      doneTasksElem.textContent = `${taskMetrics.done} tasks`;
+      pendingTasksElem.textContent = `${taskMetrics.pending} tasks`;
+      failedTasksElem.textContent = `${taskMetrics.failed} tasks`;
+      killedTasksElem.textContent = `${taskMetrics.killed} tasks`;
+    });
+  </script>
+</body>
+</html>

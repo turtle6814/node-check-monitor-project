@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "express": "^4.19.2",
+    "http": "^0.0.1-security",
+    "js-cookie": "^3.0.5",
+    "mongodb": "^6.7.0",
+    "mongoose": "^8.4.1",
+    "mqtt": "^5.7.0",
+    "os-utils": "^0.0.14",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.3"
+  }
+}

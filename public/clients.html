@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Clients Information</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    .table-container {
+      margin: 20px;
+    }
+    .dashboard-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .status-active {
+      color: #fff;
+      background-color: #76f562;
+    }
+    .status-inactive {
+      color: #fff;
+      background-color: #f56c62;
+    }
+    .status-busy {
+      color: #fff;
+      background-color: #f5eb62;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="dashboard-header">
+      <h1>Clients Information</h1>
+      <a href="index.html" class="btn btn-primary">Back to Dashboard</a>
+    </div>
+    <div class="table-container">
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Client ID</th>
+            <th>Status</th>
+            <th>Timestamp</th>
+            <th>CPU Usage (%)</th>
+            <th>Memory Usage (MB)</th>
+            <th>Response Time (ms)</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="clientsTableBody">
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script>
+    const socket = io();
+
+    const clientsTableBody = document.getElementById('clientsTableBody');
+
+    socket.on('connect', () => {
+      setInterval(() => {
+        fetch('/stats')
+          .then(response => response.json())
+          .then(data => {
+            clientsTableBody.innerHTML = ''; // Clear the table
+
+            data.clients.forEach(client => {
+              const row = document.createElement('tr');
+
+              const clientIdCell = document.createElement('td');
+              clientIdCell.textContent = client.id;
+              row.appendChild(clientIdCell);
+
+              const statusCell = document.createElement('td');
+              statusCell.textContent = client.status.charAt(0).toUpperCase() + client.status.slice(1);
+              statusCell.className = `status-${client.status}`;
+              row.appendChild(statusCell);
+
+              const timestampCell = document.createElement('td');
+              timestampCell.textContent = new Date(client.timestamp).toLocaleString();
+              row.appendChild(timestampCell);
+
+              const cpuUsageCell = document.createElement('td');
+              cpuUsageCell.textContent = client.cpuUsage.toFixed(2);
+              row.appendChild(cpuUsageCell);
+
+              const memoryUsageCell = document.createElement('td');
+              memoryUsageCell.textContent = client.memoryUsage.toFixed(2);
+              row.appendChild(memoryUsageCell);
+
+              const responseTimeCell = document.createElement('td');
+              responseTimeCell.textContent = client.responseTime.toFixed(2);
+              row.appendChild(responseTimeCell);
+
+              const actionsCell = document.createElement('td');
+              const deleteButton = document.createElement('button');
+              deleteButton.textContent = 'Delete';
+              deleteButton.className = 'btn btn-danger btn-sm';
+              deleteButton.onclick = () => {
+                fetch(`/delete-client/${client.id}`, {
+                  method: 'DELETE',
+                })
+                  .then(response => {
+                    if (response.ok) {
+                      row.remove(); // Remove the row from the table
+                    } else {
+                      alert('Failed to delete client');
+                    }
+                  });
+              };
+              actionsCell.appendChild(deleteButton);
+              row.appendChild(actionsCell);
+
+              clientsTableBody.appendChild(row);
+            });
+          });
+      }, 1000);
+    });
+  </script>
+</body>
+</html>

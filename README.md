@@ -146,4 +146,4 @@ Usage
 ```
 -   **Deleting Clients:**
 
-    -   Click the "Delete" button next to a client in the clients information page to remove them from the system.
+    Click the "Delete" button next to a client in the clients information page to remove them from the system.

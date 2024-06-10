@@ -64,8 +64,23 @@ Setup and Installation
     ```
 
     The server will run on `http://localhost:5000`.
+    
+6. **Determine Your Local IP Address**
 
-5.  **Start the node:**
+    On Windows, open Command Prompt and type:
+
+    ```
+    ipconfig
+    ```
+    On macOS or Linux, open Terminal and type:
+    
+    ```
+    ipconfig
+    ```
+    
+    Look for the IP address associated with your network adapter (e.g., 192.168.x.x).
+    Replace the localhost in the URL of the client.js
+6.  **Start the node:**
 
     ```
     node client.js

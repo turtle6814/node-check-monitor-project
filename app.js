@@ -164,7 +164,6 @@ setInterval(async () => {
     if (Date.now() > task.deadline && task.status === 'running') {
       task.status = 'failed';
       await task.save();
-      // console.log(`Task ${task.id} failed (deadline exceeded)`);
       updateTaskMetrics();
     }
   }
@@ -305,7 +304,7 @@ function gracefulShutdown() {
     process.exit(0);
   });
 
-  // Force close server after 10 seconds
+  // Force close server after 5 seconds
   setTimeout(() => {
     console.error('Forcing server shut down...');
     process.exit(1);

@@ -121,22 +121,24 @@ io.on('connection', async (socket) => {
 
   socket.on('disconnect', async () => {
     const clientId = socket.clientId;
-    console.log(`Client disconnected: ${clientId}`);
-    const client = await Client.findOne({ id: clientId });
-    if (client) {
-      client.active = false;
-      client.status = 'inactive';
-      await client.save();
+    if (clientId) {
+      console.log(`Client disconnected: ${clientId}`);
+      const client = await Client.findOne({ id: clientId });
+      if (client) {
+        client.active = false;
+        client.status = 'inactive';
+        await client.save();
 
-      const tasks = await Task.find({ clientId, status: 'running' });
-      for (const task of tasks) {
-        task.status = 'killed';
-        await task.save();
-        console.log(`Task ${task.id} killed (client disconnected)`);
+        const tasks = await Task.find({ clientId, status: 'running' });
+        for (const task of tasks) {
+          task.status = 'killed';
+          await task.save();
+          console.log(`Task ${task.id} killed (client disconnected)`);
+        }
+
+        updateClientCounts();
+        updateTaskMetrics();
       }
-
-      updateClientCounts();
-      updateTaskMetrics();
     }
   });
 });
@@ -156,16 +158,16 @@ setInterval(async () => {
 }, 1000);
 
 setInterval(async () => {
-  // Check for task deadlines and mark tasks that exceed their allowed execution time as failed
-  const tasks = await Task.find({ status: 'running' });
-  for (const task of tasks) {
-    if (Date.now() > task.deadline && task.status === 'running') {
-      task.status = 'failed';
-      await task.save();
-      console.log(`Task ${task.id} failed (deadline exceeded)`);
-      updateTaskMetrics();
-    }
-  }
+  // // Check for task deadlines and mark tasks that exceed their allowed execution time as failed
+  // const tasks = await Task.find({ status: 'running' });
+  // for (const task of tasks) {
+  //   if (Date.now() > task.deadline && task.status === 'running') {
+  //     task.status = 'failed';
+  //     await task.save();
+  //     console.log(`Task ${task.id} failed (deadline exceeded)`);
+  //     updateTaskMetrics();
+  //   }
+  // }
 
   // Check for unresponsive clients
   const clients = await Client.find({ active: true });

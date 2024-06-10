@@ -158,16 +158,16 @@ setInterval(async () => {
 }, 1000);
 
 setInterval(async () => {
-  // // Check for task deadlines and mark tasks that exceed their allowed execution time as failed
-  // const tasks = await Task.find({ status: 'running' });
-  // for (const task of tasks) {
-  //   if (Date.now() > task.deadline && task.status === 'running') {
-  //     task.status = 'failed';
-  //     await task.save();
-  //     console.log(`Task ${task.id} failed (deadline exceeded)`);
-  //     updateTaskMetrics();
-  //   }
-  // }
+  // Check for task deadlines and mark tasks that exceed their allowed execution time as failed
+  const tasks = await Task.find({ status: 'running' });
+  for (const task of tasks) {
+    if (Date.now() > task.deadline && task.status === 'running') {
+      task.status = 'failed';
+      await task.save();
+      // console.log(`Task ${task.id} failed (deadline exceeded)`);
+      updateTaskMetrics();
+    }
+  }
 
   // Check for unresponsive clients
   const clients = await Client.find({ active: true });
@@ -293,7 +293,8 @@ app.delete('/delete-client/:id', async (req, res) => {
 });
 
 const PORT = 5000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
 
 // Graceful shutdown
 function gracefulShutdown() {

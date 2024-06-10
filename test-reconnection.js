@@ -1,7 +1,7 @@
 const io = require('socket.io-client');
 const { v4: uuidv4 } = require('uuid');
 
-const clientId = '3db2ad51-54d7-4bff-837e-b40620645085';
+const clientId = '3af80972-1118-4ca7-99eb-3480b2c453c8';
 
 // Connect to the server
 const socket = io('http://localhost:5000');

@@ -97,6 +97,12 @@
         </div>
         <div class="card">
           <div class="card-body">
+            <h5 class="card-title">Allocated Memory</h5>
+            <p class="card-text" id="allocatedMemory">0 MB</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
             <h5 class="card-title">Response Time</h5>
             <p class="card-text" id="responseTime">0 ms</p>
           </div>
@@ -154,6 +160,7 @@
     const totalVirtualCoresElem = document.getElementById('totalVirtualCores');
     const allocatedVirtualCoresElem = document.getElementById('allocatedVirtualCores');
     const allocatedContainersElem = document.getElementById('allocatedContainers');
+    const allocatedMemoryElem = document.getElementById('allocatedMemory');
     const responseTimeElem = document.getElementById('responseTime');
 
     // Chart elements
@@ -208,9 +215,14 @@
           .then(data => {
             const timestamp = new Date().toLocaleTimeString();
 
-            const cpuUsage = data.clients.reduce((sum, client) => sum + client.cpuUsage, 0) / data.totalClients;
-            const memoryUsage = data.clients.reduce((sum, client) => sum + client.memoryUsage, 0) / data.totalClients;
-            const coreUsage = data.clients.reduce((sum, client) => sum + client.coreUsage, 0) / data.totalClients;
+            const activeClients = data.clients.filter(client => client.active);
+
+            const cpuUsage = activeClients.reduce((sum, client) => sum + client.cpuUsage, 0) / activeClients.length || 0;
+            const memoryUsage = activeClients.reduce((sum, client) => sum + client.memoryUsage, 0) / activeClients.length || 0;
+            const coreUsage = activeClients.reduce((sum, client) => sum + client.coreUsage, 0) / activeClients.length || 0;
+            const allocatedMemory = activeClients.reduce((sum, client) => sum + client.memoryUsage, 0);
+            const allocatedVirtualCores = activeClients.length;
+            const allocatedContainers = activeClients.length;
 
             cpuUsageChart.data.labels.push(timestamp);
             cpuUsageChart.data.datasets[0].data.push(cpuUsage);
@@ -225,23 +237,24 @@
             coreUsageChart.update();
 
             allocatedMemoryChart.data.labels.push(timestamp);
-            allocatedMemoryChart.data.datasets[0].data.push(data.allocatedMemory);
+            allocatedMemoryChart.data.datasets[0].data.push(allocatedMemory);
             allocatedMemoryChart.update();
 
             allocatedVirtualCoresChart.data.labels.push(timestamp);
-            allocatedVirtualCoresChart.data.datasets[0].data.push(data.allocatedVirtualCores);
+            allocatedVirtualCoresChart.data.datasets[0].data.push(allocatedVirtualCores);
             allocatedVirtualCoresChart.update();
 
             allocatedContainersChart.data.labels.push(timestamp);
-            allocatedContainersChart.data.datasets[0].data.push(data.allocatedContainers);
+            allocatedContainersChart.data.datasets[0].data.push(allocatedContainers);
             allocatedContainersChart.update();
 
             totalClientsElem.textContent = data.totalClients;
             activeClientsElem.textContent = data.activeClients;
             inactiveClientsElem.textContent = data.inactiveClients;
             totalVirtualCoresElem.textContent = data.totalVirtualCores;
-            allocatedVirtualCoresElem.textContent = data.allocatedVirtualCores;
-            allocatedContainersElem.textContent = data.allocatedContainers;
+            allocatedVirtualCoresElem.textContent = allocatedVirtualCores;
+            allocatedContainersElem.textContent = allocatedContainers;
+            allocatedMemoryElem.textContent = `${allocatedMemory.toFixed(2)} MB`;
             responseTimeElem.textContent = `${data.responseTime.toFixed(2)} ms`;
 
             // Update task metrics

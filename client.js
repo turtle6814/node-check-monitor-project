@@ -83,18 +83,6 @@ socket.on('connect', () => {
   }, HEARTBEAT_INTERVAL);
 });
 
-socket.on('reconnect', () => {
-  console.log('Client reconnected to server');
-  socket.emit('register-client', clientId);
-  setInterval(() => {
-    socket.emit('heartbeat', clientId);
-  }, HEARTBEAT_INTERVAL);
-});
-
-setInterval(() => {
-  socket.emit('heartbeat', clientId);
-}, HEARTBEAT_INTERVAL);
-
 socket.on('shutdown', () => {
   console.log('Server is shutting down, disconnecting client...');
   if (currentTask) {
@@ -118,5 +106,4 @@ socket.on('disconnect', () => {
     currentTask = null;
     currentIntervalId = null;
   }
-  socket.emit('client-status', { clientId, status: 'inactive' });
 });

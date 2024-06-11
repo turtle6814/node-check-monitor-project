@@ -15,7 +15,7 @@ const clientSchema = new mongoose.Schema({
   id: String,
   socketId: String,
   active: Boolean,
-  status: String,
+  status: String,  // Added status field
   timestamp: Number,
   cpuUsage: Number,
   memoryUsage: Number,
@@ -38,14 +38,14 @@ const Client = mongoose.model('Client', clientSchema);
 const Task = mongoose.model('Task', taskSchema);
 
 let totalVirtualCores = os.cpus().length;
-let totalContainers = 10;
+let totalContainers = 10; // Assuming 10 containers for example
 
-const HEARTBEAT_INTERVAL = 5000;
-const HEARTBEAT_TIMEOUT = 15000;
+const HEARTBEAT_INTERVAL = 5000; // 5 seconds
+const HEARTBEAT_TIMEOUT = 15000; // 15 seconds
 
 io.on('connection', async (socket) => {
   socket.on('register-client', async (clientId) => {
-    socket.clientId = clientId;
+    socket.clientId = clientId; // Attach clientId to the socket object for easy access
 
     let client = await Client.findOne({ id: clientId });
     if (!client) {
@@ -152,11 +152,13 @@ setInterval(async () => {
     }
     const usage = 100 - Math.round(100 * core.times.idle / total);
 
+    // Update core usage in database
     Client.updateMany({}, { coreUsage: usage }).exec();
   });
 }, 1000);
 
 setInterval(async () => {
+  // Check for task deadlines and mark tasks that exceed their allowed execution time as failed
   const tasks = await Task.find({ status: 'running' });
   for (const task of tasks) {
     if (Date.now() > task.deadline && task.status === 'running') {
@@ -166,28 +168,24 @@ setInterval(async () => {
     }
   }
 
+  // Check for unresponsive clients
   const clients = await Client.find({ active: true });
   for (const client of clients) {
     if (Date.now() - client.lastHeartbeat > HEARTBEAT_TIMEOUT) {
-      setTimeout(async () => {
-        const currentClient = await Client.findOne({ id: client.id });
-        if (Date.now() - currentClient.lastHeartbeat > HEARTBEAT_TIMEOUT) {
-          console.log(`Client ${client.id} is unresponsive`);
-          currentClient.active = false;
-          currentClient.status = 'inactive';
-          await currentClient.save();
+      console.log(`Client ${client.id} is unresponsive`);
+      client.active = false;
+      client.status = 'inactive';
+      await client.save();
 
-          const tasks = await Task.find({ clientId: client.id, status: 'running' });
-          for (const task of tasks) {
-            task.status = 'killed';
-            await task.save();
-            console.log(`Task ${task.id} killed (client unresponsive)`);
-          }
+      const tasks = await Task.find({ clientId: client.id, status: 'running' });
+      for (const task of tasks) {
+        task.status = 'killed';
+        await task.save();
+        console.log(`Task ${task.id} killed (client unresponsive)`);
+      }
 
-          updateClientCounts();
-          updateTaskMetrics();
-        }
-      }, 1000); // Delay the unresponsive check to avoid race conditions
+      updateClientCounts();
+      updateTaskMetrics();
     }
   }
 }, 1000);
@@ -257,6 +255,7 @@ app.get('/stats', async (req, res) => {
   });
 });
 
+// Endpoint to manually assign tasks to a client
 app.post('/assign-task', express.json(), async (req, res) => {
   const { clientId, taskId, number } = req.body;
   const client = await Client.findOne({ id: clientId });
@@ -265,7 +264,7 @@ app.post('/assign-task', express.json(), async (req, res) => {
       id: taskId,
       number,
       startTime: Date.now(),
-      deadline: Date.now() + 10000,
+      deadline: Date.now() + 10000, // 10 seconds to complete the task
       status: 'running',
       clientId,
     });
@@ -285,7 +284,7 @@ app.delete('/delete-client/:id', async (req, res) => {
   const clientId = req.params.id;
   try {
     await Client.deleteOne({ id: clientId });
-    await Task.deleteMany({ clientId: clientId });
+    await Task.deleteMany({ clientId: clientId });  // Optionally delete associated tasks
     res.status(200).send({ message: 'Client deleted successfully' });
   } catch (error) {
     res.status(500).send({ message: 'Error deleting client', error });
@@ -293,16 +292,19 @@ app.delete('/delete-client/:id', async (req, res) => {
 });
 
 const PORT = 5000;
+// server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
 
+// Graceful shutdown
 function gracefulShutdown() {
   console.log('Shutting down server...');
-  io.emit('shutdown');
+  io.emit('shutdown'); // Emit custom shutdown event to all clients
   server.close(() => {
     console.log('Server shut down.');
     process.exit(0);
   });
 
+  // Force close server after 5 seconds
   setTimeout(() => {
     console.error('Forcing server shut down...');
     process.exit(1);

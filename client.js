@@ -53,6 +53,7 @@ socket.on('new-task', (task) => {
   let count = 0;
   currentIntervalId = setInterval(() => {
     count++;
+    // console.log(`Current count: ${count}`);
     if (count >= targetNumber) {
       clearInterval(currentIntervalId);
       currentTask = null;

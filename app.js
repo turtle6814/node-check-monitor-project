@@ -37,8 +37,8 @@ const taskSchema = new mongoose.Schema({
 const Client = mongoose.model('Client', clientSchema);
 const Task = mongoose.model('Task', taskSchema);
 
-let totalVirtualCores = os.cpus().length;
-let totalContainers = 10;
+// let totalVirtualCores = os.cpus().length;
+// let totalContainers = 10;
 
 const HEARTBEAT_INTERVAL = 5000;
 const HEARTBEAT_TIMEOUT = 15000;

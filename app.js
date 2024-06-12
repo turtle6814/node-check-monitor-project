@@ -40,7 +40,7 @@ const Task = mongoose.model('Task', taskSchema);
 // let totalVirtualCores = os.cpus().length;
 // let totalContainers = 10;
 
-const HEARTBEAT_INTERVAL = 5000;
+// const HEARTBEAT_INTERVAL = 5000;
 const HEARTBEAT_TIMEOUT = 15000;
 
 io.on('connection', async (socket) => {
@@ -293,7 +293,7 @@ app.delete('/delete-client/:id', async (req, res) => {
 });
 
 const PORT = 5000;
-server.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 function gracefulShutdown() {
   console.log('Shutting down server...');
